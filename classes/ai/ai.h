@@ -16,7 +16,7 @@ class ai {
     public:
     explicit ai(const Player p = PLAYER_TWO) : PLAYER(p) {}
 
-    [[nodiscard]] unsigned short predict(board &b, unsigned short depth) const;
+    [[nodiscard]] unsigned short predict(const board &b, unsigned short depth) const;
 };
 
 #endif //AI_H

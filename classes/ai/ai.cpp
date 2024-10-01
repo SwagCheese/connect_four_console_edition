@@ -1,7 +1,17 @@
 #include "ai.h"
 
-using namespace std;
-
+/**
+ * Negamax algorithm with alpha-beta pruning.
+ *
+ * @param b The board to evaluate
+ * @param depth The depth of the search
+ * @param alpha The alpha value
+ * @param beta The beta value
+ * @param player The player to evaluate for
+ * @return An array containing the score for the chosen move and the column to place the piece
+ */
+// suppress clang-tidy warning about recursion
+// NOLINTNEXTLINE
 array<int, 2> ai::negamax(const board &b, const unsigned int depth, int alpha, const int beta, const Player player)
 {
     if (depth == 0 || b.full()) {
@@ -34,6 +44,14 @@ array<int, 2> ai::negamax(const board &b, const unsigned int depth, int alpha, c
     return moveSoFar;
 }
 
+/**
+ * Heuristic evaluation function for a set of pieces.
+ *
+ * @param playerCount The number of pieces the player has in the set
+ * @param emptyCount The number of empty spaces in the set
+ * @param opponentCount The number of pieces the opponent has in the set
+ * @return The evaluation score for the set
+ */
 int ai::heuristicEval(const unsigned short playerCount, const unsigned short emptyCount, const unsigned short opponentCount) {
     int score = 0;
 
@@ -47,6 +65,13 @@ int ai::heuristicEval(const unsigned short playerCount, const unsigned short emp
     return score;
 }
 
+/**
+ * Evaluate a set of pieces.
+ *
+ * @param set The set of pieces to evaluate
+ * @param player The player to evaluate for
+ * @return The score for the set
+ */
 int ai::scoreSet(const array<Player, 4> set, const Player player) {
     unsigned short emptyCount = 0;
     unsigned short playerCount = 0;
@@ -61,6 +86,13 @@ int ai::scoreSet(const array<Player, 4> set, const Player player) {
     return heuristicEval(playerCount, emptyCount, opponentCount);
 }
 
+/**
+ * Evaluate a board.
+ *
+ * @param board The board to evaluate
+ * @param player The player to evaluate for
+ * @return The score for the board
+ */
 int ai::score(const board &board, const Player player) {
     if (board.winner() == player) {
         return INT_MAX;
@@ -106,7 +138,13 @@ int ai::score(const board &board, const Player player) {
     return score;
 }
 
-
-unsigned short ai::predict(board &b, const unsigned short depth) const {
+/**
+ * Predict the best move for a given board.
+ *
+ * @param b The board to predict the best move for
+ * @param depth The depth of the search
+ * @return The best column to place the piece
+ */
+unsigned short ai::predict(const board &b, const unsigned short depth) const {
     return negamax(b, depth, INT_MIN, INT_MAX, PLAYER)[1];
 }
