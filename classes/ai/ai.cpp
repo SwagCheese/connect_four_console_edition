@@ -7,41 +7,46 @@
  * @param depth The depth of the search
  * @param alpha The alpha value
  * @param beta The beta value
- * @param player The player to evaluate for
  * @return An array containing the score for the chosen move and the column to place the piece
  */
 // suppress clang-tidy warning about recursion
 // NOLINTNEXTLINE
-array<int, 2> ai::negamax(const board &b, const unsigned int depth, int alpha, const int beta, const Player player)
-{
-    if (depth == 0 || b.full()) {
-        return {score(b, player), -1};
-    }
+array<int, 2> ai::negamax(const board &b, const unsigned int depth, int alpha, int beta) {
+    if (b.full()) return {0, -1};
+    if (depth == 0) return {score(b), -1};
 
-    if (b.winner() != PLAYER_NONE) {
-        return {b.winner() == player ? 1000000 : -1000000, -1};
-    }
-
-    array moveSoFar = {INT_MIN, -1};
-
-    for (unsigned short i = 0; i < b.NUM_COLS; ++i) {
-        if (b.getRawGrid()[0][i] == 0) {
-            board newBoard = b;
-            newBoard.placePiece(i, player);
-
-            const int currentScore = -negamax(newBoard, depth - 1, -beta, -alpha, player == PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE)[0];
-            if (currentScore > moveSoFar[0]) {
-                moveSoFar = {currentScore, i};
-            }
-
-            alpha = max(alpha, currentScore);
-            if (alpha >= beta) {
-                break;
-            }
+    for(const unsigned short i : b.getValidMoves()) {
+        // check if current player can win next move
+        board boardCopy(b);
+        boardCopy.placePiece(i); // should be replaced with some kind of board.winningMove(i) method
+        if(boardCopy.winner() != PLAYER_NONE) {
+            return {100000, i};
         }
     }
 
-    return moveSoFar;
+    if(constexpr int max = 100000; beta > max) {
+        beta = max;                     // there is no need to keep beta above our max possible score.
+        if(alpha >= beta)
+            return {beta, -1};  // prune the exploration if the [alpha;beta] window is empty.
+    }
+
+    int bestMove = -1;
+
+    for(const unsigned short x : b.getValidMoves()) {
+        board bCopy(b);
+        bCopy.placePiece(x);
+        const int score = -negamax(bCopy, depth-1, -beta, -alpha)[0]; // explore opponent's score within [-beta;-alpha] windows:
+        // no need to have good precision for score better than beta (opponent's score worse than -beta)
+        // no need to check for score worse than alpha (opponent's score worse better than -alpha)
+
+        if(score >= beta) return {score, x};
+        if(score > alpha) {
+            alpha = score;
+            bestMove = x;
+        }
+    }
+
+    return {alpha, bestMove};
 }
 
 /**
@@ -90,11 +95,10 @@ int ai::scoreSet(const array<Player, 4> set, const Player player) {
  * Evaluate a board.
  *
  * @param board The board to evaluate
- * @param player The player to evaluate for
  * @return The score for the board
  */
-int ai::score(const board &board, const Player player) {
-    if (board.winner() == player) {
+int ai::score(const board &board) {
+    if (board.winner() == board.getCurrentPlayer()) {
         return INT_MAX;
     }
 
@@ -105,33 +109,33 @@ int ai::score(const board &board, const Player player) {
     int score = 0;
 
     // evaluate horizontal sets
-    for (int i = board.HIGHEST_PIECE; i < board.NUM_ROWS; ++i) {
-        for (int j = 0; j < board.NUM_COLS - 3; ++j) {
+    for (int i = board.getHighestPiece(); i < board.getNumRows(); ++i) {
+        for (int j = 0; j < board.getNumCols() - 3; ++j) {
             const array set = {board.getRawGrid()[i][j], board.getRawGrid()[i][j + 1], board.getRawGrid()[i][j + 2], board.getRawGrid()[i][j + 3]};
-            score += scoreSet(set, player);
+            score += scoreSet(set, board.getCurrentPlayer());
         }
     }
 
     // evaluate vertical sets
-    for (int i = 0; i < board.NUM_COLS; ++i) {
-        for (int j = 0; j < board.NUM_ROWS - 3; ++j) {
+    for (int i = 0; i < board.getNumCols(); ++i) {
+        for (int j = 0; j < board.getNumRows() - 3; ++j) {
             const array set = {board.getRawGrid()[j][i], board.getRawGrid()[j + 1][i], board.getRawGrid()[j + 2][i], board.getRawGrid()[j + 3][i]};
-            score += scoreSet(set, player);
+            score += scoreSet(set, board.getCurrentPlayer());
         }
     }
 
     // evaluate diagonal sets
-    for (int i = 0; i < board.NUM_ROWS - 3; ++i) {
-        for (int j = 0; j < board.NUM_COLS - 3; ++j) {
+    for (int i = 0; i < board.getNumRows() - 3; ++i) {
+        for (int j = 0; j < board.getNumCols() - 3; ++j) {
             const array set = {board.getRawGrid()[i][j], board.getRawGrid()[i + 1][j + 1], board.getRawGrid()[i + 2][j + 2], board.getRawGrid()[i + 3][j + 3]};
-            score += scoreSet(set, player);
+            score += scoreSet(set, board.getCurrentPlayer());
         }
     }
 
-    for (int i = 0; i < board.NUM_ROWS - 3; ++i) {
-        for (int j = 3; j < board.NUM_COLS; ++j) {
+    for (int i = 0; i < board.getNumRows() - 3; ++i) {
+        for (int j = 3; j < board.getNumCols(); ++j) {
             const array set = {board.getRawGrid()[i][j], board.getRawGrid()[i + 1][j - 1], board.getRawGrid()[i + 2][j - 2], board.getRawGrid()[i + 3][j - 3]};
-            score += scoreSet(set, player);
+            score += scoreSet(set, board.getCurrentPlayer());
         }
     }
 
@@ -145,6 +149,6 @@ int ai::score(const board &board, const Player player) {
  * @param depth The depth of the search
  * @return The best column to place the piece
  */
-unsigned short ai::predict(const board &b, const unsigned short depth) const {
-    return negamax(b, depth, INT_MIN, INT_MAX, PLAYER)[1];
+unsigned short ai::predict(const board &b, const unsigned short depth) {
+    return negamax(b, depth, -INT_MAX, INT_MAX)[1];
 }

@@ -8,7 +8,7 @@ using namespace std;
 int main()
 {
     auto b = board();
-    const auto bot = ai(PLAYER_TWO);
+    auto bot = ai(PLAYER_TWO);
 
     unsigned short depth;
     for (;;) {
@@ -30,7 +30,7 @@ int main()
             cout << "Enter a column: ";
             cin >> col;
 
-            if (b.placePiece(col-1, PLAYER_ONE)) {
+            if (b.placePiece(col-1)) {
                 break;
             }
 
@@ -44,7 +44,17 @@ int main()
             return 0;
         }
 
-        b.placePiece(bot.predict(b, depth), PLAYER_TWO);
+        unsigned long time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
+        const unsigned short aiMove = bot.predict(b, depth);
+        if (aiMove < 0 || aiMove >= b.getNumCols()) {
+            cout << "AI made an invalid move: " << aiMove << endl;
+            return 0;
+        }
+
+        time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count() - time;
+        cout << "AI move: " << aiMove + 1 << " (" << time << "ms)" << endl;
+
+        b.placePiece(aiMove);
         cout << b.toBorderString() << endl;
 
 

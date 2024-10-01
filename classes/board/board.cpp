@@ -10,7 +10,7 @@
  * @return true if the board is full, false otherwise
  */
 bool board::full() const {
-    return ranges::all_of(grid[0], [](const Player &p) { return p != PLAYER_NONE; } );
+    return getValidMoves().empty();
 }
 
 /**
@@ -55,6 +55,23 @@ Player board::winner() const {
     }
 
     return PLAYER_NONE;
+}
+
+
+/**
+ * Returns a vector of valid moves
+ *
+ * @return A vector of valid moves
+ */
+vector<unsigned short> board::getValidMoves() const {
+    vector<unsigned short> validMoves{};
+    for (int i = 0; i < grid[0].size(); ++i) {
+        if (grid[0][i] == PLAYER_NONE) {
+            validMoves.push_back(i);
+        }
+    }
+
+    return validMoves;
 }
 
 /**
@@ -136,16 +153,18 @@ string board::toBorderString() const {
 
 /**
  * Place a piece in the lowest available slot in a column
+ * The piece placed alternates between PLAYER_ONE and PLAYER_TWO
  *
  * @param col The column to place a piece in
- * @param piece The piece to place
  * @return if the operation was successful
  */
-bool board::placePiece(const int col, const Player &piece) {
+bool board::placePiece(const int col) {
     if (col < 0 || col >= grid[0].size()) return false;
     for (int i = static_cast<int>(grid.size()) - 1; i >= 0; --i) {
         if (grid[i][col] == PLAYER_NONE) {
-            grid[i][col] = piece;
+            grid[i][col] = currentPlayer;
+
+            currentPlayer = currentPlayer == PLAYER_ONE ? PLAYER_TWO : PLAYER_ONE;
             HIGHEST_PIECE = HIGHEST_PIECE > i ? HIGHEST_PIECE : i;
             return true;
         }
