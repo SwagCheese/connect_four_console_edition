@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(connect_four_console_edition main.cpp
         classes/ai/ai.h
-        classes/board/board.h
         classes/player/player.h
-        classes/board/board.cpp
-        classes/ai/ai.cpp)
+        classes/ai/ai.cpp
+        classes/bitboard/bitboard.cpp
+        classes/bitboard/bitboard.h)

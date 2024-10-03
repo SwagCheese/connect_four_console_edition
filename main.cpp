@@ -1,66 +1,55 @@
 #include <iostream>
 
 #include "classes/ai/ai.h"
-#include "classes/board/board.h"
+#include "classes/bitboard/bitboard.h"
 
 using namespace std;
 
 int main()
 {
-    auto b = board();
-    auto bot = ai(PLAYER_TWO);
+    auto b = bitboard();
 
-    unsigned short depth;
+    cout << b.to_border_string();
+
     for (;;) {
-        cout << "Enter the depth of the AI search algorithm (1-10): ";
-        cin >> depth;
+        unsigned short col;
+        while (true) {
+            cout << "Enter column: ";
+            cin >> col;
+            if (col < 1 || col > 7) {
+                cout << "Invalid column. Try again." << endl;
+            } else {
+                break;
+            }
+        }
 
-        if (depth >= 1 && depth <= 10) {
+        col -= 1;
+        if (b.is_winning_move(col)) {
+            b.place_piece(col);
+            cout << b.to_border_string();
+
+            cout << "You win!" << endl;
             break;
         }
 
-        cout << "Invalid depth. Try again." << endl;
-    }
+        b.place_piece(col);
+        cout << b.to_border_string();
 
-    cout << b.toBorderString() << endl;
+        chrono::steady_clock::time_point start_time = chrono::steady_clock::now();
+        const unsigned short ai_col = ai::predict(b, 15);
+        chrono::steady_clock::time_point end_time = chrono::steady_clock::now();
+        cout << "AI places piece in column " << ai_col+1 << " (" << chrono::duration_cast<chrono::milliseconds>(end_time - start_time).count() << "ms)" << endl;
+        if (b.is_winning_move(ai_col)) {
 
-    while (!b.full()) {
-        for (;;) {
-            int col;
-            cout << "Enter a column: ";
-            cin >> col;
+            b.place_piece(ai_col);
+            cout << b.to_border_string();
 
-            if (b.placePiece(col-1)) {
-                break;
-            }
-
-            cout << "Invalid move. Try again." << endl;
+            cout << "AI wins!" << endl;
+            break;
         }
 
-        cout << b.toBorderString() << endl;
 
-        if (const Player winner = b.winner(); winner != PLAYER_NONE) {
-            cout << "Player " << winner << " wins!" << endl;
-            return 0;
-        }
-
-        unsigned long time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
-        const unsigned short aiMove = bot.predict(b, depth);
-        if (aiMove < 0 || aiMove >= b.getNumCols()) {
-            cout << "AI made an invalid move: " << aiMove << endl;
-            return 0;
-        }
-
-        time = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count() - time;
-        cout << "AI move: " << aiMove + 1 << " (" << time << "ms)" << endl;
-
-        b.placePiece(aiMove);
-        cout << b.toBorderString() << endl;
-
-
-        if (const Player winner = b.winner(); winner != PLAYER_NONE) {
-            cout << "Player " << winner << " wins!" << endl;
-            return 0;
-        }
+        b.place_piece(ai_col);
+        cout << b.to_border_string();
     }
 }
